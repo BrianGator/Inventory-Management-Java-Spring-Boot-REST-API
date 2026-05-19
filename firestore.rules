@@ -1,0 +1,98 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Catch-all deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprints
+    function isValidStore(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() < 200
+          && data.address is string && data.address.size() > 0 && data.address.size() < 500;
+    }
+
+    function isValidProduct(data) {
+      return data.name is string && data.name.size() > 0
+          && data.category is string
+          && data.price is number && data.price >= 0
+          && data.sku is string && data.sku.size() > 0;
+    }
+
+    function isValidInventory(data) {
+      return data.productId is string && data.storeId is string
+          && data.stockLevel is int;
+    }
+
+    function isValidCustomer(data) {
+      return data.name is string && data.email is string && data.phone is string;
+    }
+
+    function isValidOrder(data) {
+      return data.customerId is string && data.storeId is string 
+          && data.totalPrice is number && data.totalPrice >= 0
+          && data.date is timestamp;
+    }
+
+    function isValidReview(data) {
+      return data.rating is int && data.rating >= 1 && data.rating <= 5
+          && data.productId is string && data.storeId is string;
+    }
+
+    // Collection Rules
+    
+    match /stores/{storeId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidStore(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidProduct(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    match /inventory/{invId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidInventory(incoming());
+      allow delete: if isSignedIn();
+    }
+
+    match /customers/{custId} {
+      allow read: if isSignedIn();
+      allow create: if true; // Allow new registration during order
+      allow update: if isSignedIn() && isValidCustomer(incoming());
+    }
+
+    match /orders/{orderId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidOrder(incoming());
+    }
+
+    match /orderItems/{itemId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn(); // Schema is complex, simplified for brevity
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidReview(incoming());
+      allow update, delete: if isSignedIn() && existing().customerId == request.auth.uid;
+    }
+  }
+}

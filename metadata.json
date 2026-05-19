@@ -1,0 +1,8 @@
+{
+  "name": "Retail Inventory Management",
+  "description": "Enterprise Retail Management System with JavaScript/Node.js, structured logging, API versioning, and hybrid data persistence (Firestore/NoSQL patterns).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
